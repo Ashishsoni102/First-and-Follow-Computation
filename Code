@@ -1,0 +1,80 @@
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+void readLine(FILE *looker, char nonTerminal[], char production[])
+{
+fscanf(looker, &quot;%[^-&gt;]&quot;, nonTerminal);
+fseek(looker, 2, 1);
+fscanf(looker, &quot;%[^\n]&quot;, production);
+fgetc(looker);
+}
+void computeFirst(char fileName[])
+{
+FILE *looker = fopen(fileName, &quot;r&quot;);
+char nonTerminal[5], production[10], crntState, prevState, buff = fgetc(looker);
+crntState = buff;
+while(buff != EOF)
+{
+fseek(looker, -1, 1);
+readLine(looker, nonTerminal, production);
+if(crntState != prevState)
+printf(&quot;FIRST(%c) = { &quot;, crntState);
+if((isupper(production[0]) != 0) &amp;&amp; (nonTerminal[0] != production[0]))
+printf(&quot;FIRST(%c), &quot;, production[0]);
+else if(nonTerminal[0] != production[0])
+printf(&quot;%c, &quot;, production[0]);
+prevState = crntState;
+crntState = buff = fgetc(looker);
+if(prevState != crntState)
+printf(&quot;\b\b }\n&quot;);
+}
+fclose(looker);
+}
+void computeFollow(char fileName[])
+{
+FILE *looker = fopen(fileName, &quot;r&quot;);
+FILE *explorer = fopen(fileName, &quot;r&quot;);
+char crntNT[5], nonTerminal[5], production[10], crntState, prevState, startState, buff, *index,
+follower;
+crntState = startState = buff = fgetc(looker);
+while(buff != EOF)
+
+{
+fseek(looker, -1, 1);
+readLine(looker, crntNT, production);
+if(crntState != prevState)
+{
+printf(&quot;FOLLOW(%s) = { &quot;, crntNT);
+if(crntState == startState)
+printf(&quot;$, &quot;);
+fseek(explorer, 0, 0);
+while((buff = fgetc(explorer)) != EOF)
+{
+fseek(explorer, -1, 1);
+readLine(explorer, nonTerminal, production);
+if((index = strstr(production, crntNT)) == NULL )
+continue;
+follower = *(index+1);
+if((follower == &#39;\0&#39;)&amp;&amp;(strcmp(crntNT, nonTerminal) != 0))
+printf(&quot;FOLLOW(%s), &quot;, nonTerminal);
+else if(isupper(follower) != 0)
+printf(&quot;FIRST(%c), &quot;, follower);
+else
+printf(&quot;%c, &quot;, follower);
+}
+printf(&quot;\b\b }\n&quot;);
+}
+prevState = crntState;
+crntState = buff = fgetc(looker);
+}
+fcloseall();
+}
+void main()
+{
+char fileName[20];
+printf(&quot;Enter the name of file containing grammar :: &quot;);
+scanf(&quot;%s&quot;, fileName);
+computeFirst(fileName);
+putchar(&#39;\n&#39;);
+computeFollow(fileName);
+getch();
+}
